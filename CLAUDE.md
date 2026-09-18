@@ -4,18 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Fantasy Character Chat App backend — an AI-powered platform where users converse with persistent fantasy characters. Full design is in `FCC.pdf` (technical architecture doc); this repo currently implements the MVP subset of it.
+Fantasy Character Chat App — an AI-powered platform where users converse with persistent fantasy characters. Full design is in `FCC.pdf` (technical architecture doc); this repo currently implements the MVP subset of it.
 
-**MVP scope note:** authentication/users is intentionally not implemented yet (explicit product decision). There is no `auth` or `users` module, and documents have no `ownerId`/`userId` fields. Do not add auth-gated behavior unless asked. Redis, BullMQ, the memory system, and the model router's multi-provider config are Phase 2/3 in the source doc and are also not implemented — the LLM path currently runs single-provider (Venice) with no caching/queueing.
+**Repo layout:** `backend/` is the Node/Express API (everything below refers to paths under it). `application/` is the Flutter mobile client.
+
+**MVP scope note:** authentication/users is intentionally not implemented yet (explicit product decision). There is no `auth` or `users` module, and documents have no `ownerId`/`userId` fields. Do not add auth-gated behavior unless asked. Redis, BullMQ, and the memory system are Phase 2/3 in the source doc and are also not implemented — there's no caching/queueing. The LLM path does support switching providers via `LLM_PROVIDER` (`venice` | `openrouter` | `deepinfra`), all going through the same `OpenAiCompatibleProvider` fetch client.
 
 ## Commands
+
+Run from `backend/`:
 
 - `npm run dev` — start the API with hot reload (`ts-node-dev`) on `PORT` (default 4000)
 - `npm run build` — compile TypeScript to `dist/`
 - `npm start` — run the compiled build (`dist/server.js`)
 - `npm run typecheck` — `tsc --noEmit`, no separate lint script exists
 
-Requires a running MongoDB at `MONGO_URI` (see `.env.example`). Copy it to `.env` before running. `VENICE_API_KEY` is only needed to actually hit the LLM; without it, everything except `POST /api/v1/conversations/:id/messages` works.
+Requires a running MongoDB at `MONGO_URI` (see `backend/.env.example`). Copy it to `backend/.env` before running. The active provider's API key (`VENICE_API_KEY` / `OPENROUTER_API_KEY` / `DEEPINFRA_API_KEY`) is only needed to actually hit the LLM; without it, everything except `POST /api/v1/conversations/:id/messages` works.
 
 ## Architecture
 
