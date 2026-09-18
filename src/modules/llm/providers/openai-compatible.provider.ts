@@ -6,6 +6,9 @@ import { LLMRequest, LLMResponse } from "../llm.types";
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RETRIES = 2;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+// ponytail: some RP-merge models (e.g. MythoMax) leak game-mechanic artifacts
+// from their training data instead of a real reply. Retry once on detection.
+const GAME_MECHANIC_LEAK = /\b\d{1,3}\s*%\s*(chance|yes|no|likely)?\b/i;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,6 +47,7 @@ export class OpenAiCompatibleProvider implements LLMProvider {
             messages: request.messages,
             max_tokens: request.maxTokens ?? 1000,
             temperature: request.temperature ?? 0.9,
+            stop: request.stop,
           }),
           signal: controller.signal,
         });
@@ -64,8 +68,13 @@ export class OpenAiCompatibleProvider implements LLMProvider {
           usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
         };
 
+        const content = data.choices[0]?.message?.content ?? "";
+        if (GAME_MECHANIC_LEAK.test(content) && attempt < MAX_RETRIES) {
+          continue;
+        }
+
         return {
-          content: data.choices[0]?.message?.content ?? "",
+          content,
           model: data.model ?? model,
           usage: {
             inputTokens: data.usage?.prompt_tokens ?? 0,

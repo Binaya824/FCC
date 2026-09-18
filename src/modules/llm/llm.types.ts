@@ -7,6 +7,7 @@ export interface LLMRequest {
   messages: LLMMessage[];
   maxTokens?: number;
   temperature?: number;
+  stop?: string[];
 }
 
 export interface LLMUsage {
